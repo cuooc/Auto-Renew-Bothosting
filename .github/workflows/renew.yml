@@ -9,8 +9,8 @@ jobs:
   Renew-bot:
     runs-on: ubuntu-24.04
     permissions:
+      contents: write
       actions: write
-      contents: read
 
     steps:
       - uses: actions/checkout@v6
@@ -38,7 +38,7 @@ jobs:
         env:
           EMAIL: ${{ secrets.EMAIL }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          PASSWORD: ${{ secrets.PASSWORD }}
           SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
@@ -53,6 +53,20 @@ jobs:
           pkill -f chrome || true
           pkill -f Xvfb || true
           rm -f sing-box sing-box-config.json sing-box.log
+
+      # 更新时间到time.txt,避免6个月未更新导致工作流暂停
+      - name: 🕒 更新运行时间
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "$(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S')" > time.txt
+          git add time.txt
+          if git diff --cached --quiet; then
+            echo "No need to commit"
+          else
+            git commit -m "⏱️ Auto Update by Github Actions $(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M:%S')"
+            git push origin main
+          fi
 
       - name: 🧹 清理旧的工作流运行记录
         if: always()
